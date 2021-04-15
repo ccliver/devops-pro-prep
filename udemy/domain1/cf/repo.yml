@@ -8,7 +8,7 @@ Resources:
     Type: AWS::IAM::User
     Properties:
       Policies:
-        - PolicyName: giveaccesstoqueueonly
+        - PolicyName: repo-user
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
