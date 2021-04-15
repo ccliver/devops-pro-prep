@@ -1,0 +1,26 @@
+---
+Parameters:
+  RepoName:
+    Type: String
+
+Resources:
+  RepoUser:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+        - PolicyName: giveaccesstoqueueonly
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "*"
+                Resource:
+                  - "*"
+      UserName: repo-user
+
+  Repo:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      RepositoryName: !Ref RepoName
+      RepositoryDescription: Repo for DevOps Pro certification lab
