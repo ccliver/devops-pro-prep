@@ -28,6 +28,8 @@ clone_repo: ## Clone the lab repo
 	cp -r lab-files/cicd-demo/* ./${NAME}/
 	cd ./${NAME} && git add . && git commit . -m "initial setup" && git push
 
+cleanup_lab: ## Cleanup local lab files
+	@rm -rf ./${NAME}
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 	awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
