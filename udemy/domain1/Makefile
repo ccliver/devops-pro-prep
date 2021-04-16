@@ -12,7 +12,7 @@ NAME="devops-domain1-lab"
 PUBKEY=$(shell cat ~/.ssh/id_rsa.pub)
 
 
-create_repo:  ## Create a CodeCommit repository and user to access it
+create_repo:  ## Create a CodeCommit repository with an admin and jr user
 	@docker run ${DOCKER_OPTIONS} ccliver/awscli aws cloudformation create-stack \
 		${AWS_CLI_OPTIONS} --stack-name ${NAME}-repo --template-body file:///work/cf/repo.yml \
 		--parameters ParameterKey=RepoName,ParameterValue=${NAME} \

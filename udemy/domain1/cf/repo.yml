@@ -19,6 +19,44 @@ Resources:
                   - "*"
       UserName: repo-user
 
+  RepoUserJrDev:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+        - PolicyName: deny-master-merge
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Deny
+                Action:
+                  - codecommit:GitPush
+                  - codecommit:DeleteBranch
+                  - codecommit:PutFile
+                  - codecommit:MergeBranchesByFastForward
+                  - codecommit:MergeBranchesBySquash
+                  - codecommit:MergeBranchesByThreeWay
+                  - codecommit:MergePullRequestByFastForward
+                  - codecommit:MergePullRequestBySquash
+                  - codecommit:MergePullRequestByThreeWay
+                Resource: arn:aws:codecommit:*:*:*
+                Condition:
+                  StringEqualsIfExists:
+                    codecommit:References:
+                      - refs/heads/master
+                  'Null':
+                    codecommit:References: 'false'
+
+        - PolicyName: repo-user-jr-dev
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "*"
+                Resource:
+                  - "*"
+      UserName: repo-user-jr-dev
+
   Repo:
     Type: AWS::CodeCommit::Repository
     Properties:
