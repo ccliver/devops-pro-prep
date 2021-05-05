@@ -64,16 +64,77 @@ Resources:
       - Endpoint: "ccliver@gmail.com"
         Protocol: email
 
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: codecommit-trigger-lambda
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+            - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+        Version: 2012-10-17
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSLambdaExecute
+      Path: /
+
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: codecommit-trigger
+      Runtime: python2.7
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+
+          codecommit = boto3.client('codecommit')
+
+          def lambda_handler(event, context):
+              #Log the updated references from the event
+              references = { reference['ref'] for reference in event['Records'][0]['codecommit']['references'] }
+              print('References: '  + str(references))
+              
+              #Get the repository from the event and show its git clone URL
+              repository = event['Records'][0]['eventSourceARN'].split(':')[5]
+              try:
+                  response = codecommit.get_repository(repositoryName=repository)
+                  print('Clone URL: ' +response['repositoryMetadata']['cloneUrlHttp'])
+                  return response['repositoryMetadata']['cloneUrlHttp']
+              except Exception as e:
+                  print(e)
+                  print('Error getting repository {}. Make sure it exists and that your repository is in the same region as this function.'.format(repository))
+                  raise e
+      Handler: index.lambda_handler
+      MemorySize: 128
+      Timeout: 10
+      Role: !GetAtt LambdaRole.Arn
+
+  InvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt LambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: codecommit.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+
   Repo:
     Type: AWS::CodeCommit::Repository
     Properties:
       RepositoryName: !Ref RepoName
       RepositoryDescription: Repo for DevOps Pro certification lab
       Triggers:
-      - Name: RepoUpdates
+      - Name: RepoUpdatesSNS
         CustomData: testing
         DestinationArn: !Ref RepoUpdates
-        Branches:
-        - master
+        #Branches:
+        #- master
+        Events:
+        - all
+      - Name: RepoUpdatesLambda
+        DestinationArn: !GetAtt LambdaFunction.Arn
         Events:
         - all

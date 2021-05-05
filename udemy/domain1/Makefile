@@ -32,6 +32,7 @@ validate_template: ## Check Cloudformation syntax
 	@aws cloudformation validate-template --template-body file://cf/repo.yml || exit 0
 
 cleanup_lab: ## Cleanup local lab files
+	@aws cloudformation delete-stack --stack-name ${NAME}-repo
 	@rm -rf ./${NAME}
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
