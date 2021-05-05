@@ -17,7 +17,7 @@ create_repo:  ## Create a CodeCommit repository with an admin and jr user
 		${AWS_CLI_OPTIONS} --stack-name ${NAME}-repo --template-body file:///work/cf/repo.yml \
 		--parameters ParameterKey=RepoName,ParameterValue=${NAME} \
 		--capabilities CAPABILITY_NAMED_IAM --on-failure DELETE
-	@sleep 5
+	@sleep 10
 	@docker run ${DOCKER_OPTIONS} ccliver/awscli aws iam upload-ssh-public-key \
 		--user-name repo-user --ssh-public-key-body "${PUBKEY}"
 
@@ -27,6 +27,9 @@ clone_repo: ## Clone the lab repo
 		aws iam list-ssh-public-keys --user-name repo-user | jq -r .SSHPublicKeys[0].SSHPublicKeyId)@git-codecommit.us-east-1.amazonaws.com/v1/repos/${NAME}
 	cp -r lab-files/cicd-demo/* ./${NAME}/
 	cd ./${NAME} && git add . && git commit . -m "initial setup" && git push
+
+validate_template: ## Check Cloudformation syntax
+	@aws cloudformation validate-template --template-body file://cf/repo.yml || exit 0
 
 cleanup_lab: ## Cleanup local lab files
 	@rm -rf ./${NAME}

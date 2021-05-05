@@ -57,8 +57,23 @@ Resources:
                   - "*"
       UserName: repo-user-jr-dev
 
+  RepoUpdates:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+      - Endpoint: "ccliver@gmail.com"
+        Protocol: email
+
   Repo:
     Type: AWS::CodeCommit::Repository
     Properties:
       RepositoryName: !Ref RepoName
       RepositoryDescription: Repo for DevOps Pro certification lab
+      Triggers:
+      - Name: RepoUpdates
+        CustomData: testing
+        DestinationArn: !Ref RepoUpdates
+        Branches:
+        - master
+        Events:
+        - all
