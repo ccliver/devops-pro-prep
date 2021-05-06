@@ -1,0 +1,56 @@
+---
+Parameters:
+  ProjectName:
+    Type: String
+  Region:
+    Type: String
+
+Resources:
+  BuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - codebuild.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+
+  BuildRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Ref ProjectName
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action:
+          - codebuild:*
+          - codecommit:*
+          - logs:Create*
+          - logs:Put*
+          Resource: '*'
+      Roles:
+      - !Ref BuildRole
+
+  BuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Ref ProjectName
+      Description: Test whether the word "Congratulations" exists in index.html
+      ServiceRole: !GetAtt BuildRole.Arn
+      Artifacts:
+        Type: no_artifacts
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:1.0
+      Source:
+        Type: CODECOMMIT
+        Location: !Join [ '', ['https://git-codecommit.', !Ref Region, '.amazonaws.com/v1/repos/', !Ref ProjectName ] ]
+      SourceVersion: refs/heads/master
+      TimeoutInMinutes: 10
