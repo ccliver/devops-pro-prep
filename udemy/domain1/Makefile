@@ -10,6 +10,7 @@ DOCKER_OPTIONS=-v ${PWD}:/work \
 AWS_CLI_OPTIONS=--region ${REGION}
 NAME="devops-domain1-lab"
 PUBKEY=$(shell cat ~/.ssh/id_rsa.pub)
+USER=cloud_user # Default user for acloudguru's AWS sandboxes
 
 
 create_repo:  ## Create a CodeCommit repository with an admin and jr user
@@ -36,6 +37,7 @@ setup_codebuild: ## Create a CodeBuild project to build the lab app
 	@docker run ${DOCKER_OPTIONS} ccliver/awscli aws cloudformation create-stack \
 		${AWS_CLI_OPTIONS} --stack-name ${NAME}-build --template-body file:///work/cf/build.yml \
 		--parameters ParameterKey=ProjectName,ParameterValue=${NAME} ParameterKey=Region,ParameterValue=${REGION} \
+		  ParameterKey=User,ParameterValue=${USER} \
 		--capabilities CAPABILITY_NAMED_IAM --on-failure DELETE
 
 cleanup_lab: ## Cleanup local lab files
