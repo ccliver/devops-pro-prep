@@ -1,7 +1,9 @@
 ## Setup lab
 ```bash
 create_repo                    Create a CodeCommit repository with an admin and jr user
-clone_repo                     Clone the lab repo
+clone_repo                     Clone the repo and copy lab files into it
+validate_templates             Check Cloudformation syntax
+setup_codebuild                Create a CodeBuild project to build the lab app
 cleanup_lab                    Cleanup local lab files
 ```
 
@@ -10,9 +12,10 @@ cleanup_lab                    Cleanup local lab files
 # CodeCommit repo grants access to IAM user `repo-user` with SSH key `~/.ssh/id_rsa`
 
 
-# Create the repo and push the lab code up
+# Create the repo, push the lab code up, definea CodeBuild project
 make create_repo
 make clone_repo
+make setup_codebuild
 
 
 # Cleanup local workspace

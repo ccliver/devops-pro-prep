@@ -18,6 +18,7 @@ Resources:
           Principal:
             Service:
             - codebuild.amazonaws.com
+            #- events.amazonaws.com # for scheduled build
           Action:
           - sts:AssumeRole
       Path: /
@@ -42,9 +43,24 @@ Resources:
           - ecr:PutImage,
           - ecr:UploadLayerPart
           - ecr:GetAuthorizationToken
+          - ssm:Get*
+          - s3:Put*
           Resource: '*'
       Roles:
       - !Ref BuildRole
+
+  ArtifactsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: !Join ['', [!Ref ProjectName, '-artifacts']]
+
+  # Example of passing a Parameter Store string to a build project
+  #ParameterStoreData:
+  #  Type: AWS::SSM::Parameter
+  #  Properties:
+  #    Name: /codebuild/data
+  #    Type: String
+  #    Value: testdata
 
   BuildProject:
     Type: AWS::CodeBuild::Project
@@ -68,11 +84,18 @@ Resources:
           - Name: IMAGE_TAG
             Type: PLAINTEXT
             Value: latest
+          # Not used
+          #- Name: PARAMETER_STORE_VALUE
+          #  Type: PARAMETER_STORE
+          #  Value: !Ref ParameterStoreData
       Source:
         Type: CODECOMMIT
         Location: !Join ['', ['https://git-codecommit.', !Ref Region, '.amazonaws.com/v1/repos/', !Ref ProjectName ]]
       SourceVersion: refs/heads/master
       TimeoutInMinutes: 10
+      Artifacts:
+        Type: S3
+        Location: !Ref ArtifactsBucket
 
   # ECR repo to use with this tutorial: https://docs.aws.amazon.com/codebuild/latest/userguide/sample-docker.html
   # Copy files from lab-files/docker-sample-codebuild into the git repo and build the CodeBuild project.
@@ -94,3 +117,15 @@ Resources:
             - "ecr:InitiateLayerUpload"
             - "ecr:UploadLayerPart"
             - "ecr:CompleteLayerUpload"
+
+  # Schedule the build hourly
+  #ScheduledBuild:
+  #  Type: AWS::Events::Rule
+  #  Properties:
+  #    ScheduleExpression: "rate(1 hour)"
+  #    State: ENABLED
+  #    RoleArn: !GetAtt BuildRole.Arn
+  #    Targets:
+  #      - Arn: !GetAtt BuildProject.Arn
+  #        Id: !Ref ProjectName
+  #        RoleArn: !GetAtt BuildRole.Arn
