@@ -11,13 +11,22 @@ AWS_CLI_OPTIONS=--region ${REGION}
 NAME="devops-domain1-lab"
 PUBKEY=$(shell cat ~/.ssh/id_rsa.pub)
 USER=cloud_user # Default user for acloudguru's AWS sandboxes
+CREATE_PARAMS=--capabilities CAPABILITY_NAMED_IAM --on-failure DELETE
+UPDATE_PARAMS=--capabilities CAPABILITY_NAMED_IAM
 
+ifeq ($(UPDATE), "")
+	OP=create
+	PARAMS=${CREATE_PARAMS}
+else
+	OP=update
+	PARAMS=${UPDATE_PARAMS}
+endif
 
 create_repo:  ## Create a CodeCommit repository with an admin and jr user
-	@docker run ${DOCKER_OPTIONS} ccliver/awscli aws cloudformation create-stack \
+	@docker run ${DOCKER_OPTIONS} ccliver/awscli aws cloudformation ${OP}-stack \
 		${AWS_CLI_OPTIONS} --stack-name ${NAME}-repo --template-body file:///work/cf/repo.yml \
 		--parameters ParameterKey=RepoName,ParameterValue=${NAME} \
-		--capabilities CAPABILITY_NAMED_IAM --on-failure DELETE
+		${PARAMS}
 	@sleep 10
 	@docker run ${DOCKER_OPTIONS} ccliver/awscli aws iam upload-ssh-public-key \
 		--user-name repo-user --ssh-public-key-body "${PUBKEY}"
@@ -32,13 +41,20 @@ clone_repo: ## Clone the repo and copy lab files into it
 validate_templates: ## Check Cloudformation syntax
 	@aws cloudformation validate-template --template-body file://cf/repo.yml || exit 0
 	@aws cloudformation validate-template --template-body file://cf/build.yml || exit 0
+	@aws cloudformation validate-template --template-body file://cf/deploy.yml || exit 0
 
 setup_codebuild: ## Create a CodeBuild project to build the lab app
-	@docker run ${DOCKER_OPTIONS} ccliver/awscli aws cloudformation create-stack \
+	@docker run ${DOCKER_OPTIONS} ccliver/awscli aws cloudformation ${OP}-stack \
 		${AWS_CLI_OPTIONS} --stack-name ${NAME}-build --template-body file:///work/cf/build.yml \
 		--parameters ParameterKey=ProjectName,ParameterValue=${NAME} ParameterKey=Region,ParameterValue=${REGION} \
 		  ParameterKey=User,ParameterValue=${USER} \
-		--capabilities CAPABILITY_NAMED_IAM --on-failure DELETE
+		${PARAMS}
+
+launch_instance: ## Launch an instance to deploy the lab app to using CodeDeploy
+	@docker run ${DOCKER_OPTIONS} ccliver/awscli aws cloudformation ${OP}-stack \
+		${AWS_CLI_OPTIONS} --stack-name ${NAME}-deploy --template-body file:///work/cf/deploy.yml \
+		--parameters ParameterKey=ProjectName,ParameterValue=${NAME} \
+		${PARAMS}
 
 cleanup_lab: ## Cleanup local lab files
 	@aws cloudformation delete-stack --stack-name ${NAME}-repo

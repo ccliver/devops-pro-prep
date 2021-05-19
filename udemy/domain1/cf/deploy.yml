@@ -1,0 +1,118 @@
+---
+Parameters:
+
+  ProjectName:
+    Type: String
+
+Resources:
+
+  DeployInstanceSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: App instance security group
+      GroupName: app-instance-sg
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  AppRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+
+  AppRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Ref ProjectName
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action:
+          - s3:*
+          Resource: '*'
+      Roles:
+      - !Ref AppRole
+
+  AppInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Join ['', [!Ref ProjectName, "-profile"]]
+      Path: /
+      Roles:
+      - !Ref AppRole
+
+  DeployInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0d5eff06f840b45e9
+      InstanceType: t3.small
+      SecurityGroupIds:
+        - !Ref DeployInstanceSG
+      UserData: !Base64 |
+        #!/bin/bash
+        yum update -y
+        yum install -y ruby wget
+        wget https://aws-codedeploy-eu-west-1.s3.eu-west-1.amazonaws.com/latest/install
+        chmod +x ./install
+        ./install auto
+      Tags:
+        - Key: Name
+          Value: !Join ['', [!Ref ProjectName, "-app"]]
+        - Key: Environment
+          Value: Test
+      IamInstanceProfile: !Ref AppInstanceProfile
+
+  CodeDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - codedeploy.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
+
+  CodeDeployApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: !Ref ProjectName
+      ComputePlatform: Server
+
+  DeploymentGroup: 
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties: 
+      ApplicationName: !Ref ProjectName
+      Deployment: 
+        IgnoreApplicationStopFailures: true
+        Revision:
+          RevisionType: S3
+          S3Location: 
+            Bucket: !Join ['', [!Ref ProjectName, '-artifacts']]
+            Key: !Join ['', [!Ref ProjectName, '.zip']]
+            BundleType: zip
+      Ec2TagFilters: 
+        - Key: Environment
+          Value: Test
+          Type: KEY_AND_VALUE
+      ServiceRoleArn: !GetAtt [CodeDeployRole, Arn]
+      DeploymentStyle:
+        DeploymentOption: WITHOUT_TRAFFIC_CONTROL
+        DeploymentType: IN_PLACE

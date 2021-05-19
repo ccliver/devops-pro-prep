@@ -21,4 +21,4 @@ phases:
 artifacts:
   files:
     - '**/*' # all files
-  name: webapp-artifacts
+  name: devops-domain1-lab
