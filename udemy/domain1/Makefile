@@ -14,7 +14,7 @@ USER=cloud_user # Default user for acloudguru's AWS sandboxes
 CREATE_PARAMS=--capabilities CAPABILITY_NAMED_IAM --on-failure DELETE
 UPDATE_PARAMS=--capabilities CAPABILITY_NAMED_IAM
 
-ifeq ($(UPDATE), "")
+ifeq ($(origin UPDATE), undefined)
 	OP=create
 	PARAMS=${CREATE_PARAMS}
 else
