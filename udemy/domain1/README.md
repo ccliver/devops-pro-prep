@@ -4,6 +4,7 @@ create_repo                    Create a CodeCommit repository with an admin and 
 clone_repo                     Clone the repo and copy lab files into it
 validate_templates             Check Cloudformation syntax
 setup_codebuild                Create a CodeBuild project to build the lab app
+launch_instance                Launch an instance to deploy the lab app to using CodeDeploy
 cleanup_lab                    Cleanup local lab files
 ```
 
@@ -16,9 +17,14 @@ cleanup_lab                    Cleanup local lab files
 make create_repo
 make clone_repo
 make setup_codebuild
+make launch_instance
 
 
 # Cleanup local workspace
 make cleanup_lab
+
+
+# NOTE: Set the UPDATE var in the environment to update a stack
+UPDATE=true make launch_instance
 ```
 
