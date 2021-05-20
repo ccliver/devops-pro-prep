@@ -37,6 +37,7 @@ clone_repo: ## Clone the repo and copy lab files into it
 		aws iam list-ssh-public-keys --user-name repo-user | jq -r .SSHPublicKeys[0].SSHPublicKeyId)@git-codecommit.us-east-1.amazonaws.com/v1/repos/${NAME}
 	cp -r lab-files/cicd-demo/* ./${NAME}/
 	cd ./${NAME} && git add . && git commit . -m "initial setup" && git push
+	@docker run ${DOCKER_OPTIONS} ccliver/awscli aws codebuild start-build --project-name ${NAME} --region ${REGION} > /dev/null
 
 validate_templates: ## Check Cloudformation syntax
 	@aws cloudformation validate-template --template-body file://cf/repo.yml || exit 0
@@ -58,7 +59,10 @@ launch_instance: ## Launch an instance to deploy the lab app to using CodeDeploy
 
 cleanup_lab: ## Cleanup local lab files
 	@aws cloudformation delete-stack --stack-name ${NAME}-repo
+	@aws cloudformation delete-stack --stack-name ${NAME}-build
+	@aws cloudformation delete-stack --stack-name ${NAME}-deploy
 	@rm -rf ./${NAME}
+
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 	awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
