@@ -116,3 +116,4 @@ Resources:
       DeploymentStyle:
         DeploymentOption: WITHOUT_TRAFFIC_CONTROL
         DeploymentType: IN_PLACE
+    DependsOn: DeployInstance

@@ -50,6 +50,8 @@ setup_codebuild: ## Create a CodeBuild project to build the lab app
 		--parameters ParameterKey=ProjectName,ParameterValue=${NAME} ParameterKey=Region,ParameterValue=${REGION} \
 		  ParameterKey=User,ParameterValue=${USER} \
 		${PARAMS}
+	@sleep 15
+	aws codebuild start-build --project-name ${NAME} > /dev/null
 
 launch_instance: ## Launch an instance to deploy the lab app to using CodeDeploy
 	@docker run ${DOCKER_OPTIONS} ccliver/awscli aws cloudformation ${OP}-stack \
