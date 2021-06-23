@@ -1,0 +1,92 @@
+---
+Parameters:
+  ProjectName:
+    Type: String
+
+Resources:
+  PipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - codepipeline.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+
+  PipelineRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Ref ProjectName
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action:
+          - s3:*
+          - codebuild:*
+          - codedeploy:*
+          - codecommit:*
+          Resource: '*'
+      Roles:
+      - !Ref PipelineRole
+
+  DeployPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties: 
+      ArtifactStore:
+        Location: !Join ['', [!Ref ProjectName, '-artifacts']]
+        Type: S3
+      Name: !Ref ProjectName
+      RoleArn: !GetAtt PipelineRole.Arn
+      Stages: 
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: CodeCommit
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                BranchName: master
+                RepositoryName: !Ref ProjectName
+                PollForSourceChanges: true
+              RunOrder: 1
+              OutputArtifacts:
+                - Name: !Join ['', [!Ref ProjectName, '-artifacts']] 
+        - Name: Build
+          Actions:
+            - Name: !Ref ProjectName
+              ActionTypeId:
+                Owner: AWS
+                Category: Build
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref ProjectName
+              InputArtifacts:
+                - Name: !Join ['', [!Ref ProjectName, '-artifacts']] 
+              #OutputArtifacts:
+              #  - Name: !Join ['', [!Ref ProjectName, '-artifacts']]
+              RunOrder: 1
+        - Name: Deploy
+          Actions:
+            - Name: Deploy
+              InputArtifacts:
+                - Name: !Join ['', [!Ref ProjectName, '-artifacts']]
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CodeDeploy
+              Configuration:
+                ApplicationName: !Ref ProjectName
+                DeploymentGroupName: !ImportValue DeploymentGroupName
+              RunOrder: 1

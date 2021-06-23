@@ -44,7 +44,7 @@ Resources:
           - ecr:UploadLayerPart
           - ecr:GetAuthorizationToken
           - ssm:Get*
-          - s3:Put*
+          - s3:*
           Resource: '*'
       Roles:
       - !Ref BuildRole

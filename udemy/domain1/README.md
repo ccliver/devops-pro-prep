@@ -9,6 +9,7 @@ clone_repo                     Clone the repo and copy lab files into it
 validate_templates             Check Cloudformation syntax
 setup_codebuild                Create a CodeBuild project to build the lab app
 launch_instance                Launch an instance to deploy the lab app to using CodeDeploy
+create_pipeline                Create a CodePipeline pipeline to tie all of the developer tools together
 cleanup_lab                    Cleanup local lab files
 ```
 
@@ -18,6 +19,10 @@ cleanup_lab                    Cleanup local lab files
 * Clone the repo and add lab files: `make clone_repo`
 * Create the CodeBuild project: `make setup_codebuild`
 * Launch an instance to run the app: `make launch_instance`
+* Create a pipeline in CodePipeline to link all the dev tools together: `make create_pipeline`
+* Once the pipeline is finished you can access the lab server via the URL from `make get_url`
+* Make a change to index.html in the lab repo: `cd ./devops-domain1-lab && vim index.html && git commit . -m 'testing' && git push`
+* Wait for the pipeline to complete and verify the change was deployed: `make get_url`
 
 ### Cleanup
 * Cleanup the local environment and Cloudformation stacks: `make cleanup_lab`

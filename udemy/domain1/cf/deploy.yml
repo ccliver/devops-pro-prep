@@ -16,6 +16,10 @@ Resources:
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
 
   AppRole:
     Type: AWS::IAM::Role
@@ -64,7 +68,7 @@ Resources:
         #!/bin/bash
         yum update -y
         yum install -y ruby wget
-        wget https://aws-codedeploy-eu-west-1.s3.eu-west-1.amazonaws.com/latest/install
+        wget https://aws-codedeploy-us-east-1.s3.us-east-1.amazonaws.com/latest/install
         chmod +x ./install
         ./install auto
       Tags:
@@ -100,14 +104,6 @@ Resources:
     Type: AWS::CodeDeploy::DeploymentGroup
     Properties: 
       ApplicationName: !Ref ProjectName
-      Deployment: 
-        IgnoreApplicationStopFailures: true
-        Revision:
-          RevisionType: S3
-          S3Location: 
-            Bucket: !Join ['', [!Ref ProjectName, '-artifacts']]
-            Key: !Join ['', [!Ref ProjectName, '.zip']]
-            BundleType: zip
       Ec2TagFilters: 
         - Key: Environment
           Value: Test
@@ -117,3 +113,10 @@ Resources:
         DeploymentOption: WITHOUT_TRAFFIC_CONTROL
         DeploymentType: IN_PLACE
     DependsOn: DeployInstance
+
+Outputs:
+  DeploymentGroupName:
+    Description: The ARN of the CodeBuild artifacts bucket
+    Value: !Ref DeploymentGroup
+    Export:
+      Name: DeploymentGroupName

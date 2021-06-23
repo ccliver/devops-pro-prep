@@ -43,6 +43,7 @@ validate_templates: ## Check Cloudformation syntax
 	@aws cloudformation validate-template --template-body file://cf/repo.yml || exit 0
 	@aws cloudformation validate-template --template-body file://cf/build.yml || exit 0
 	@aws cloudformation validate-template --template-body file://cf/deploy.yml || exit 0
+	@aws cloudformation validate-template --template-body file://cf/pipeline.yml || exit 0
 
 setup_codebuild: ## Create a CodeBuild project to build the lab app
 	@docker run ${DOCKER_OPTIONS} ccliver/awscli aws cloudformation ${OP}-stack \
@@ -50,14 +51,22 @@ setup_codebuild: ## Create a CodeBuild project to build the lab app
 		--parameters ParameterKey=ProjectName,ParameterValue=${NAME} ParameterKey=Region,ParameterValue=${REGION} \
 		  ParameterKey=User,ParameterValue=${USER} \
 		${PARAMS}
-	@sleep 15
-	aws codebuild start-build --project-name ${NAME} > /dev/null
+	@sleep 20
 
 launch_instance: ## Launch an instance to deploy the lab app to using CodeDeploy
 	@docker run ${DOCKER_OPTIONS} ccliver/awscli aws cloudformation ${OP}-stack \
 		${AWS_CLI_OPTIONS} --stack-name ${NAME}-deploy --template-body file:///work/cf/deploy.yml \
 		--parameters ParameterKey=ProjectName,ParameterValue=${NAME} \
 		${PARAMS}
+
+create_pipeline: ## Create a CodePipeline pipeline to tie all of the developer tools together
+	@docker run ${DOCKER_OPTIONS} ccliver/awscli aws cloudformation ${OP}-stack \
+		${AWS_CLI_OPTIONS} --stack-name ${NAME}-pipeline --template-body file:///work/cf/pipeline.yml \
+		--parameters ParameterKey=ProjectName,ParameterValue=${NAME} \
+		${PARAMS}
+
+get_url: ## Output the url for the lab app
+	@echo "http://$(shell aws ec2 describe-instances --region us-east-1 --filters "Name=tag:Environment,Values=Test" --query "Reservations[0].Instances[0].[PublicIpAddress]" --output text)/index.html"
 
 cleanup_lab: ## Cleanup local lab files
 	@aws cloudformation delete-stack --stack-name ${NAME}-repo
