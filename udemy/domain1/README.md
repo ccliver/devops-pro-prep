@@ -1,4 +1,4 @@
-## Setup lab
+## Create a pipeline that deploys the sample app to an EC2 instance on updates to master. Integrates CodeCommit, CodeBuild, CodeDeploy, and CodePipeline
 
 ### Available build steps
 ```bash
