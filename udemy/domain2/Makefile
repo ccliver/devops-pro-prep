@@ -15,12 +15,17 @@ show_eb_solution_stacks: ## Output the list of available ElasticBeanlstalk solut
 	@aws elasticbeanstalk list-available-solution-stacks
 
 create_eb_environment: ## Creates an ElasticBeanstalk 
-	@mkdir ${NAME}-hello-world && cd ${NAME}-hello-world && \
-		docker run ${DOCKER_OPTIONS} -w /work/${NAME}-hello-world ccliver/awscli eb init ${EB_CLI_OPTIONS} ${NAME}-hello-world \
-			-p "64bit Amazon Linux 2 v3.3.2 running PHP 8.0" && \
-			echo "Hello World" >> index.html && \
-		docker run ${DOCKER_OPTIONS} -w /work/${NAME}-hello-world ccliver/awscli eb create ${EB_CLI_OPTIONS} ${NAME}-hello-world
-	
+	@mkdir ${NAME}-hello-world
+	@docker run ${DOCKER_OPTIONS} -w /work/${NAME}-hello-world ccliver/awscli eb init \
+		${EB_CLI_OPTIONS} ${NAME}-hello-world \
+		-p "64bit Amazon Linux 2 v3.3.2 running PHP 8.0"
+	@echo "Hello World" >> ${NAME}-hello-world/index.html
+	@docker run ${DOCKER_OPTIONS} -w /work/${NAME}-hello-world ccliver/awscli eb create \
+		${EB_CLI_OPTIONS} ${NAME}-hello-world
+
+create_saved_configuration: ## Take a backup of the EB environment configuration
+	@docker run ${DOCKER_OPTIONS} -w /work/${NAME}-hello-world ccliver/awscli eb config save ${NAME}-hello-world
+
 cleanup_lab: ## Delete AWS resources and cleanup local environment
 	@rm -rf ${NAME}-hello-world
 	@rm -rf .elasticbeanstalk
