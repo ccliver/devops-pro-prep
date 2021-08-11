@@ -1,0 +1,129 @@
+---
+Parameters:
+  SolutionStackName:
+    Type: String
+
+Resources:
+  ServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service:
+                - elasticbeanstalk.amazonaws.com
+            Action: 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                'sts:ExternalId': elasticbeanstalk
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'elasticloadbalancing:DescribeInstanceHealth'
+                  - 'ec2:DescribeInstances'
+                  - 'ec2:DescribeInstanceStatus'
+                  - 'ec2:GetConsoleOutput'
+                  - 'ec2:AssociateAddress'
+                  - 'ec2:DescribeAddresses'
+                  - 'ec2:DescribeSecurityGroups'
+                  - 'sqs:GetQueueAttributes'
+                  - 'sqs:GetQueueUrl'
+                  - 'autoscaling:DescribeAutoScalingGroups'
+                  - 'autoscaling:DescribeAutoScalingInstances'
+                  - 'autoscaling:DescribeScalingActivities'
+                  - 'autoscaling:DescribeNotificationConfigurations'
+                Resource:
+                  - '*'
+      Path: /
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref InstanceProfileRole
+  InstanceProfileRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: Access
+                Effect: Allow
+                Action:
+                  - 'ec2:*'
+                  - 's3:*'
+                  - 'cloudwatch:*'
+                Resource: '*'
+      Path: /
+
+  BlueApp:
+    Type: AWS::ElasticBeanstalk::Application
+    Properties: 
+      ApplicationName: "Blue"
+      Description: "Elastic Beanstalk Blue/Green Lab - Blue"
+
+  BlueAppVersion:
+    Type: AWS::ElasticBeanstalk::ApplicationVersion
+    Properties:
+      ApplicationName: !Ref BlueApp
+      Description: Blue Version 1.0
+      SourceBundle:
+        S3Bucket: ccliver-eb-lab-blue-green-artifacts
+        S3Key: blue-artifact.zip
+
+  BlueEnvironment:
+    Type: AWS::ElasticBeanstalk::Environment
+    Properties:
+      ApplicationName: !Ref BlueApp
+      Description: Blue Lab Environment
+      SolutionStackName: !Ref SolutionStackName
+      VersionLabel: !Ref BlueAppVersion
+      OptionSettings:
+        - Namespace: 'aws:autoscaling:launchconfiguration'
+          OptionName: IamInstanceProfile
+          Value: !Ref InstanceProfile
+  
+  GreenApp:
+    Type: AWS::ElasticBeanstalk::Application
+    Properties: 
+      ApplicationName: "Green"
+      Description: "Elastic Beanstalk Blue/Green Lab - Green"
+
+  GreenAppVersion:
+    Type: AWS::ElasticBeanstalk::ApplicationVersion
+    Properties:
+      ApplicationName: !Ref GreenApp
+      Description: Green Version 1.0
+      SourceBundle:
+        S3Bucket: ccliver-eb-lab-blue-green-artifacts
+        S3Key: green-artifact.zip
+
+  GreenEnvironment:
+    Type: AWS::ElasticBeanstalk::Environment
+    Properties:
+      ApplicationName: !Ref GreenApp
+      Description: Green Lab Environment
+      SolutionStackName: !Ref SolutionStackName
+      VersionLabel: !Ref GreenAppVersion
+      OptionSettings:
+        - Namespace: 'aws:autoscaling:launchconfiguration'
+          OptionName: IamInstanceProfile
+          Value: !Ref InstanceProfile
