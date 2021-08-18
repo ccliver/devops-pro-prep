@@ -5,3 +5,6 @@
 
 1. [Domain 1 - SDLC Automation](https://github.com/ccliver/devops-pro-prep/tree/main/udemy/domain1)
 2. [Domain 2 - Configuration Management and Infrastructure as Code](https://github.com/ccliver/devops-pro-prep/tree/main/udemy/domain2)
+
+## Qwiklabs
+* [Working with ECS](https://github.com/ccliver/devops-pro-prep/tree/main/qwiklabs/ecs)
